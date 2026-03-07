@@ -1,38 +1,15 @@
 # -*- coding: utf-8 -*-
-
+from config import *
 from mod.common.mod import Mod
 import mod.server.extraServerApi as serverApi
 import mod.client.extraClientApi as clientApi
 
-from .architect.subsystem import SubsystemManager
-
-def Destroy():
-    from Utils.Expression import old
-    import math
-    math.sin = old.sin
-    math.cos = old.cos
-    math.pow = old.pow
-    abs = old.abs
-    max = old.max
-    min = old.min
-
-
-@Mod.Binding(name="Script_SAPI", version="0.0.1")
-class Script_SAPI(object):
+@Mod.Binding(name="MoreUI", version="0.0.1")
+class MoreUI(object):
     @Mod.InitServer()
-    def SAPI_ServerInit(self):
-        serverApi.RegisterSystem("SAPI", "world",
-                                 "Scripts_SAPI.SAPI_S.World")
-        serverApi.RegisterSystem("SAPI", "system",
-                                 "Scripts_SAPI.SAPI_S.System")
-        SubsystemManager.createServerSystem('SAPI', 'Base', 'Scripts_SAPI.minecraft.SAPIS')
+    def MoreUIServerInit(self):
+        serverApi.RegisterSystem(NamespaceServer, SystemNameServer, SystemPathServer)
 
     @Mod.InitClient()
-    def SAPI_ClientInit(self):
-        clientApi.RegisterSystem("SAPI", "manager",
-                                 "Scripts_SAPI.SAPI_C.Manager")
-        SubsystemManager.createClientSystem('SAPI', 'SAPI_C', 'Scripts_SAPI.SAPI_C.SAPI_C')
-
-    @Mod.DestroyServer()
-    def SAPI_UtilsDestory(self):
-        Destroy()
+    def MoreUIClientInit(self):
+        clientApi.RegisterSystem(NamespaceClient, SystemNameClient, SystemPathClient)

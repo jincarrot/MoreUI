@@ -1,0 +1,64 @@
+# coding=utf-8
+import mod.client.extraClientApi as clientApi
+from Forms import *
+
+ClientSystem = clientApi.GetClientSystemCls()
+
+CComp = clientApi.GetEngineCompFactory()
+
+class MoreUIClient(ClientSystem):
+
+    def __init__(self, namespace, systemName):
+        ClientSystem.__init__(self, namespace, systemName)
+        self.__ListenEvent()
+
+    def __ListenEvent(self):
+        self.ListenForEvent(NamespaceServer, SystemNameServer, "sendCustomForm", self, self.sendCustomForm)
+        self.ListenForEvent(NamespaceServer, SystemNameServer, "updateCustomForm", self, self.updateCustomForm)
+        self.ListenForEvent(NamespaceServer, SystemNameServer, "closeCustomForm", self, self.closeCustomForm)
+        self.ListenForEvent(NamespaceServer, SystemNameServer, "combineCustomForm", self, self.combineCustomForm)
+        self.ListenForEvent(NamespaceServer, SystemNameServer, "sendMoreCustomForm", self, self.sendMoreCustomForm)
+        self.ListenForEvent(clientApi.GetEngineNamespace(), clientApi.GetEngineSystemName(), "UiInitFinished", self, self.initUI)
+
+    def initUI(self, data):
+        clientApi.RegisterUI("server_ui", "CustomForm", "%s.CustomFormUI" % UIPath, "server_forms.custom_form")
+        clientApi.RegisterUI("server_ui", "MoreUI", "%s.More" % UIPath, "server_forms.moreui")
+
+    def sendCustomForm(self, data):
+        screen = clientApi.GetTopScreen()
+        if hasattr(screen, "isMoreUI"):
+            for form in screen.forms:
+                if form.formId == data['formId']:
+                    screen.GetBaseUIControl(form.basePath).SetVisible(True)
+        if hasattr(screen, "update"):
+            return
+        clientApi.PushScreen("server_ui", "CustomForm", data)
+
+    def updateCustomForm(self, data):
+        screen = clientApi.GetTopScreen()
+        if hasattr(screen, "update"):
+            screen.update(data)
+
+    def closeCustomForm(self, data):
+        screen = clientApi.GetTopScreen()
+        if hasattr(screen, "onButtonClick"):
+            clientApi.PopScreen()
+        if hasattr(screen, "isMoreUI"):
+            for form in screen.forms:
+                if form.formId == data['formId']:
+                    form.close({})
+
+    def combineCustomForm(self, data):
+        screen = clientApi.GetTopScreen()
+        if hasattr(screen, "isMoreUI"):
+            fm = CustomFormUI("", "", data)
+            def repeat():
+                if screen.GetBaseUIControl("/screen"):
+                    screen.combine(fm)
+                    clientApi.GetEngineCompFactory().CreateGame(clientApi.GetLevelId()).CancelTimer(timerId)
+            timerId = clientApi.GetEngineCompFactory().CreateGame(clientApi.GetLevelId()).AddTimer(0.01, repeat)
+
+    def sendMoreCustomForm(self, data):
+        screen = clientApi.GetTopScreen()
+        if not hasattr(screen, "isMoreUI"):
+            clientApi.PushScreen("server_ui", "MoreUI", data)
