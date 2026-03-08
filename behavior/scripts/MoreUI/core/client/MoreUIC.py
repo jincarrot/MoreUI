@@ -21,8 +21,9 @@ class MoreUIClient(ClientSystem):
         self.ListenForEvent(clientApi.GetEngineNamespace(), clientApi.GetEngineSystemName(), "UiInitFinished", self, self.initUI)
 
     def initUI(self, data):
-        clientApi.RegisterUI("server_ui", "CustomForm", "%s.CustomFormUI" % UIPath, "server_forms.custom_form")
-        clientApi.RegisterUI("server_ui", "MoreUI", "%s.More" % UIPath, "server_forms.moreui")
+        path = MoreUIClient.__module__.replace("MoreUIC", "Forms")
+        clientApi.RegisterUI("server_ui", "CustomForm", "%s.CustomFormUI" % path, "server_forms.custom_form")
+        clientApi.RegisterUI("server_ui", "MoreUI", "%s.More" % path, "server_forms.moreui")
 
     def sendCustomForm(self, data):
         screen = clientApi.GetTopScreen()

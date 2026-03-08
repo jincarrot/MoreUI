@@ -3,10 +3,9 @@ import mod.server.extraServerApi as serverApi
 
 ServerSystem = serverApi.GetServerSystemCls()
 comp = serverApi.GetEngineCompFactory()
+from MoreUI.lib import * # 服务端导入此即可使用MoreUI，记得在客户端导入MoreUI.register以注册
 
-from ..moreui import *
-
-class MoreUIServer(ServerSystem):
+class ExampleServer(ServerSystem):
 
     def __init__(self, namespace, systemName):
         ServerSystem.__init__(self, namespace, systemName)

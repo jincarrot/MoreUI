@@ -6,6 +6,12 @@ from ..config import *
 ScreenNode = clientApi.GetScreenNodeCls()
 ViewBinder = clientApi.GetViewBinderCls()
 
+def getSystem():
+    system = clientApi.GetSystem(NamespaceClient, SystemNameClient)
+    if system:
+        return system
+    raise Exception("MoreUI运行时错误！请检查您是否在客户端导入了MoreUI.register？")
+
 class CustomFormUI(ScreenNode):
     """Custom form."""
     
@@ -75,14 +81,14 @@ class CustomFormUI(ScreenNode):
         for (textField, obId, value) in self.textFields:
             text = textField.GetEditText()
             if text != value:
-                clientApi.GetSystem(NamespaceClient, SystemNameClient).NotifyToServer(
+                getSystem().NotifyToServer(
                     "updateObservable%s" % obId, 
                     {"value": text}
                 )
         for (toggle, obId, value) in self.toggles:
             toggled = toggle.GetToggleState()
             if toggled != value:
-                clientApi.GetSystem(NamespaceClient, SystemNameClient).NotifyToServer(
+                getSystem().NotifyToServer(
                     "updateObservable%s" % obId, 
                     {"value": toggled}
                 )
@@ -90,7 +96,7 @@ class CustomFormUI(ScreenNode):
             steps = maxValue - minValue
             cur = int(round(slider.GetSliderValue() * steps) + minValue)
             if cur != value:
-                clientApi.GetSystem(NamespaceClient, SystemNameClient).NotifyToServer(
+                getSystem().NotifyToServer(
                     "updateObservable%s" % obId, 
                     {"value": cur}
                 )
@@ -110,7 +116,7 @@ class CustomFormUI(ScreenNode):
         content.SetVisible(False)
         self.content.SetFullSize("y", {"absoluteValue": self.height})
         if self.dropdowns[obId] != value:
-            clientApi.GetSystem(NamespaceClient, SystemNameClient).NotifyToServer(
+            getSystem().NotifyToServer(
                 "updateObservable%s" % obId, 
                 {"value": value}
             )
@@ -364,7 +370,7 @@ class CustomFormUI(ScreenNode):
             index += 1
 
     def onButtonClick(self, data):
-        clientApi.GetSystem(NamespaceClient, SystemNameClient).NotifyToServer(
+        getSystem().NotifyToServer(
             "updateForm%s" % self.formId, 
             {
                 "selection": int(data['ButtonPath'][-1]),

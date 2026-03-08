@@ -7,6 +7,12 @@ from ..config import *
 Observables = []
 CustomForms = {} # type: dict[int, dict[str, list]]
 
+def getSystem():
+    system = serverApi.GetSystem(NamespaceServer, SystemNameServer)
+    if system:
+        return system
+    raise Exception("MoreUI运行时错误！未知原因导致无法获取服务端系统！")
+
 class Observable:
     """
     A class that represents data that can be Observed. Extensively used for UI.
@@ -27,7 +33,7 @@ class Observable:
             Observable.ID += 1
 
             if options['clientWritable']:
-                serverApi.GetSystem(NamespaceServer, SystemNameServer).ListenForEvent(NamespaceClient, SystemNameClient, "updateObservable%s" % self._id, self, self._update)
+                getSystem().ListenForEvent(NamespaceClient, SystemNameClient, "updateObservable%s" % self._id, self, self._update)
         else:
             raise TypeError("Create observable failed! Expected type int | float | str | bool, but got %s" % (type(self.__data).__name__, type(data).__name__))
 
@@ -85,7 +91,7 @@ class Observable:
 def updateForm(form, mode="update", options={}):
     # type: (CustomForm, str, dict) -> None
     if mode == 'sendMore':
-        serverApi.GetSystem(NamespaceServer, SystemNameServer).NotifyToClient(
+        getSystem().NotifyToClient(
             form, 
             "%sCustomForm" % mode, 
             {
@@ -140,7 +146,7 @@ def updateForm(form, mode="update", options={}):
 
         temp['visible'] = control['visible'].getData() if hasattr(control['visible'], "getData") else control['visible']
         data.append(temp)
-    serverApi.GetSystem(NamespaceServer, SystemNameServer).NotifyToClient(
+    getSystem().NotifyToClient(
             form._playerId, 
             "%sCustomForm" % mode, 
             {
@@ -208,7 +214,7 @@ class CustomForm(DynamicForm):
             CustomForms[self._formId]['obs'].append(options['movable']._id)
         if hasattr(options['closable'], "getData"):
             CustomForms[self._formId]['obs'].append(options['closable']._id)
-        serverApi.GetSystem(NamespaceServer, SystemNameServer).ListenForEvent(NamespaceClient, SystemNameClient, "updateForm%s" % self._formId, self, self._update)
+        getSystem().ListenForEvent(NamespaceClient, SystemNameClient, "updateForm%s" % self._formId, self, self._update)
 
     @property
     def formId(self):
@@ -266,7 +272,7 @@ class CustomForm(DynamicForm):
         return self
     
     def close(self):
-        serverApi.GetSystem(NamespaceServer, SystemNameServer).NotifyToClient(
+        getSystem().NotifyToClient(
             self._playerId, 
             "closeCustomForm", 
             {"formId": self._formId}
@@ -309,7 +315,7 @@ class CustomForm(DynamicForm):
             )
         if not isinstance(value, Observable):
             raise Exception(
-                "CustomForm create button failed! arg 1 expected type Observable<int>, but got %s" % type(toggled).__name__
+                "CustomForm create dropdown failed! arg 1 expected type Observable<int>, but got %s" % type(value).__name__
             )
         else:
             if not value._options['clientWritable']:

@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from config import *
 from mod.common.mod import Mod
 import mod.server.extraServerApi as serverApi
 import mod.client.extraClientApi as clientApi
@@ -8,8 +7,8 @@ import mod.client.extraClientApi as clientApi
 class MoreUI(object):
     @Mod.InitServer()
     def MoreUIServerInit(self):
-        serverApi.RegisterSystem(NamespaceServer, SystemNameServer, SystemPathServer)
+        serverApi.RegisterSystem("MoreUIExample", "ExampleServer", "scripts.example_s.ExampleServer")
 
     @Mod.InitClient()
     def MoreUIClientInit(self):
-        clientApi.RegisterSystem(NamespaceClient, SystemNameClient, SystemPathClient)
+        clientApi.RegisterSystem("MoreUIExample", "ExampleClient", "scripts.example_c.ExampleClient")
