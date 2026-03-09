@@ -43,6 +43,8 @@ class CustomFormUI(ScreenNode):
         self.sliders = []
         self.dropdowns = {}
         self.height = 0
+        self.pos = None
+        self.size = None
 
     @ViewBinder.binding(ViewBinder.BF_ButtonClickUp, '#custom_form_close')
     def Close(self, args):
@@ -71,13 +73,15 @@ class CustomFormUI(ScreenNode):
         self.title.SetText(self.titleLabel)
         self.move_btn = self.sn.GetBaseUIControl(self.basePath + "/move").asButton()
         self.move_btn.AddTouchEventParams({"isSwallow": True})
-        self.move_btn.SetButtonTouchMoveCallback(self.move)
+        # self.move_btn.SetButtonTouchMoveCallback(self.move)
         self.resize_btn = self.sn.GetBaseUIControl(self.basePath + "/resize").asButton()
         self.resize_btn.AddTouchEventParams({"isSwallow": True})
-        self.resize_btn.SetButtonTouchMoveCallback(self.resize)
+        # self.resize_btn.SetButtonTouchMoveCallback(self.resize)
         self.update({"data": self.data, "title": self.titleLabel, "formId": self.formId, "options": self.options})
 
     def Update(self):
+        self.move({})
+        self.resize({})
         for (textField, obId, value) in self.textFields:
             text = textField.GetEditText()
             if text != value:
@@ -380,25 +384,39 @@ class CustomFormUI(ScreenNode):
 
     def move(self, data):
         size = self.panel.GetSize()
-        posX = self.move_btn.GetPosition()[0]
-        posY = self.move_btn.GetPosition()[1]
+        pos = self.move_btn.GetPosition()
+        posX = pos[0]
+        posY = pos[1]
+        if (posX - size[0] / 2 + 8, posY) == self.pos:
+            return
         scrollValue = self.panel.asScrollView().GetScrollViewPercentValue()
         self.panel.SetPosition((posX - size[0] / 2 + 8, posY))
         self.resize_btn.SetPosition((posX + size[0] / 2 - 8, posY + size[1] - 25))
         self.panel.asScrollView().SetScrollViewPercentValue(scrollValue)
+        self.pos = (posX - size[0] / 2 + 8, posY)
 
     def resize(self, data):
-        scrollValue = self.panel.asScrollView().GetScrollViewPercentValue()
-        posX = self.resize_btn.GetPosition()[0]
-        posY = self.resize_btn.GetPosition()[1]
+        pos = self.resize_btn.GetPosition()
+        posX = pos[0]
+        posY = pos[1]
         ori = self.panel.GetPosition()
         ori_size = self.panel.GetSize()
-        size = (posX - ori[0] + 16, posY - ori[1] + 25)
+        size = [posX - ori[0] + 16, posY - ori[1] + 25]
+        if size[0] < 60:
+            size[0] = 60
+        if size[1] < 60:
+            size[1] = 60
+        if size[0] == 60 or size[1] == 60:
+            self.resize_btn.SetPosition((ori[0] + size[0] - 16, ori[1] + size[1] - 25))
+        if self.size == size:
+            return
+        scrollValue = self.panel.asScrollView().GetScrollViewPercentValue()
         move_ori_pos = self.move_btn.GetPosition()
-        self.panel.SetSize(size, True)
+        self.panel.SetSize((size[0], size[1]), True)
         self.panel.SetPosition(ori)
         self.move_btn.SetPosition((move_ori_pos[0] + size[0] / 2 - ori_size[0] / 2, move_ori_pos[1]))
         self.panel.asScrollView().SetScrollViewPercentValue(scrollValue)
+        self.size = [size[0], size[1]]
 
 class More(ScreenNode):
     
