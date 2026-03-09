@@ -2,7 +2,7 @@
 from copy import deepcopy
 import mod.server.extraServerApi as serverApi
 import types
-from ..config import *
+from ..config_server import *
 
 Observables = []
 CustomForms = {} # type: dict[int, dict[str, list]]
@@ -403,7 +403,7 @@ class CustomForm(DynamicForm):
             )
         if not isinstance(value, Observable):
             raise Exception(
-                "CustomForm create button failed! arg 1 expected type Observable<int>, but got %s" % type(toggled).__name__
+                "CustomForm create button failed! arg 1 expected type Observable<int>, but got %s" % type(value).__name__
             )
         else:
             if not value._options['clientWritable']:

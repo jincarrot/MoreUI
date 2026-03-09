@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import random
 import mod.client.extraClientApi as clientApi
-from ..config import *
+from ..config_client import *
 
 ScreenNode = clientApi.GetScreenNodeCls()
 ViewBinder = clientApi.GetViewBinderCls()

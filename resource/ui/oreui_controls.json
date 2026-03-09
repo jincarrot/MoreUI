@@ -535,7 +535,8 @@
                                         }
                                     },
                                     {
-                                        "button_label@netease_editor_template_namespace.button_label": {
+                                        "button_label": {
+                                            "type": "label",
                                             "anchor_from": "left_middle",
                                             "anchor_to": "left_middle",
                                             "font_scale_factor": 0.5,
@@ -646,7 +647,8 @@
                                         }
                                     },
                                     {
-                                        "button_label@netease_editor_template_namespace.button_label": {
+                                        "button_label": {
+                                            "type": "label",
                                             "anchor_from": "left_middle",
                                             "anchor_to": "left_middle",
                                             "font_scale_factor": 0.5,
@@ -757,7 +759,8 @@
                                         }
                                     },
                                     {
-                                        "button_label@netease_editor_template_namespace.button_label": {
+                                        "button_label": {
+                                            "type": "label",
                                             "anchor_from": "left_middle",
                                             "anchor_to": "left_middle",
                                             "font_scale_factor": 0.5,
@@ -937,7 +940,8 @@
                 }
             },
             {
-                "button_label@netease_editor_template_namespace.button_label": {
+                "button_label": {
+                    "type": "label",
                     "anchor_from": "left_middle",
                     "anchor_to": "left_middle",
                     "font_scale_factor": 0.5,
@@ -2523,15 +2527,6 @@
                                 "size": [
                                     "100%",
                                     "4px"
-                                ]
-                            }
-                        },
-                        {
-                            "button_label@netease_editor_template_namespace.button_label": {
-                                "font_type": "smooth",
-                                "offset": [
-                                    0,
-                                    "-2px"
                                 ]
                             }
                         }
