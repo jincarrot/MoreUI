@@ -383,6 +383,8 @@ class CustomFormUI(ScreenNode):
         )
 
     def move(self, data):
+        if not self.move_btn:
+            return
         size = self.panel.GetSize()
         pos = self.move_btn.GetPosition()
         posX = pos[0]
@@ -396,6 +398,8 @@ class CustomFormUI(ScreenNode):
         self.pos = (posX - size[0] / 2 + 8, posY)
 
     def resize(self, data):
+        if not self.resize_btn:
+            return
         pos = self.resize_btn.GetPosition()
         posX = pos[0]
         posY = pos[1]

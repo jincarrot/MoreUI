@@ -535,8 +535,7 @@
                                         }
                                     },
                                     {
-                                        "button_label": {
-                                            "type": "label",
+                                        "button_label@netease_editor_template_namespace.button_label": {
                                             "anchor_from": "left_middle",
                                             "anchor_to": "left_middle",
                                             "font_scale_factor": 0.5,
@@ -647,8 +646,7 @@
                                         }
                                     },
                                     {
-                                        "button_label": {
-                                            "type": "label",
+                                        "button_label@netease_editor_template_namespace.button_label": {
                                             "anchor_from": "left_middle",
                                             "anchor_to": "left_middle",
                                             "font_scale_factor": 0.5,
@@ -759,8 +757,7 @@
                                         }
                                     },
                                     {
-                                        "button_label": {
-                                            "type": "label",
+                                        "button_label@netease_editor_template_namespace.button_label": {
                                             "anchor_from": "left_middle",
                                             "anchor_to": "left_middle",
                                             "font_scale_factor": 0.5,
@@ -940,8 +937,7 @@
                 }
             },
             {
-                "button_label": {
-                    "type": "label",
+                "button_label@netease_editor_template_namespace.button_label": {
                     "anchor_from": "left_middle",
                     "anchor_to": "left_middle",
                     "font_scale_factor": 0.5,
