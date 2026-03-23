@@ -6,6 +6,7 @@ from ..config_server import *
 
 Observables = []
 CustomForms = {} # type: dict[int, dict[str, list]]
+BarForms = {}
 
 def getSystem():
     system = serverApi.GetSystem(NamespaceServer, SystemNameServer)
@@ -103,7 +104,7 @@ def updateForm(form, mode="update", options={}):
     data = []
     if not options:
         options = deepcopy(form._options)
-    for key in ['resizable', 'movable', 'closable', 'pos', 'size', 'offset', 'margin']:
+    for key in ['resizable', 'movable', 'closable', 'pos', 'size', 'offset', 'margin', "direction", "layer", "mayCloseAll"]:
         if key not in options:
             continue
         if isinstance(options[key], (list, tuple)):
@@ -119,7 +120,7 @@ def updateForm(form, mode="update", options={}):
         if control['type'] == 'button':
             temp["label"] = control['label'].getData() if hasattr(control['label'], "getData") else control['label']
         elif control['type'] == 'label':
-            temp["text"] = control['text'].getData() if hasattr(control['text'], "getData") else control['text']
+            temp["text"] = str(control['text'].getData() if hasattr(control['text'], "getData") else control['text'])
         elif control['type'] == 'textField':
             temp['label'] = control['label'].getData() if hasattr(control['label'], "getData") else control['label']
             temp['text'] = control['text'].getData() if hasattr(control['text'], "getData") else control['text']
@@ -355,6 +356,7 @@ class CustomForm(DynamicForm):
         # type: (str | Observable, dict) -> CustomForm
         # Type checking.
         label_value = text.getData() if hasattr(text, "getData") else text
+        label_value = str(label_value)
         if not isinstance(label_value, str):
             if hasattr(text, "getData"):
                 actual_type = "Observable<%s>" % type(text.getData()).__name__
@@ -568,6 +570,120 @@ class CustomForm(DynamicForm):
         # type: (str, str | Observable, dict) -> CustomForm
         return CustomForm(playerId, title, options)
     
+class MessageForm(DynamicForm):
+    
+    def __init__(self, playerId, title):
+        pass
+
+class BarForm(DynamicForm):
+    
+    def __init__(self, playerId, title, options={}):
+        # Type checking.
+        if not isinstance(playerId, str):
+            raise Exception("Create bar form failed! arg 0 excepted type str")
+        if not type(title.getData() if hasattr(title, "getData") else title) == str:
+            raise Exception(
+                "Create bar form failed! arg 1 excepted type str | Observable<str>, but got %s" % (
+                    (
+                        "Observable<%s>" % type(title.getData()).__name__
+                    ) if hasattr(title, "getData") 
+                    else type(title).__name__
+                )
+            )
+        if not isinstance(options, dict):
+            raise Exception(
+                "Bar form create failed! arg 2 expected type dict, but got %s" % type(options).__name__
+            )
+        else:
+            if "resizable" not in options:
+                options['resizable'] = False
+            if "movable" not in options:
+                options['movable'] = False
+            if "style" not in options:
+                options['style'] = "oreui"
+            if "closable" not in options:
+                options['closable'] = False
+            if "direction" not in options:
+                options["direction"] = "vertical"
+        # Set data.
+        self._playerId = playerId
+        self._title = title
+        self._data = []
+        self._options = options
+        self._formId = CustomForm.ID
+        CustomForm.ID += 1
+        BarForms[self._formId] = {
+            "form": self,
+            "obs": []
+        }
+        if hasattr(title, "getData"):
+            BarForms[self._formId]['obs'].append(title._id)
+        if hasattr(options['resizable'], "getData"):
+            BarForms[self._formId]['obs'].append(options['resizable']._id)
+        if hasattr(options['movable'], "getData"):
+            BarForms[self._formId]['obs'].append(options['movable']._id)
+        if hasattr(options['closable'], "getData"):
+            BarForms[self._formId]['obs'].append(options['closable']._id)
+        getSystem().ListenForEvent(NamespaceClient, SystemNameClient, "updateBarForm%s" % self._formId, self, self._update)
+
+    @property
+    def formId(self):
+        return self._formId
+    
+    def _update(self, data):
+        selection = data['selection']
+        self._data[selection]['callback']()
+
+    @staticmethod
+    def create(playerId, title, options={}):
+        return BarForm(playerId, title, options)
+
+    def button(self, label, onClick, options={}):
+        # Type checking.
+        label_value = label.getData() if hasattr(label, "getData") else label
+        if not isinstance(label_value, str):
+            if hasattr(label, "getData"):
+                actual_type = "Observable<%s>" % type(label.getData()).__name__
+            else:
+                actual_type = type(label).__name__
+            raise Exception(
+                "BarForm create button failed! arg 0 expected type str | Observable<str>, but got %s" % actual_type
+            )
+        if not isinstance(options, dict):
+            raise Exception(
+                "BarForm create button failed! arg 1 expected type dict, but got %s" % type(options).__name__
+            )
+        else:
+            if "visible" not in options:
+                options['visible'] = True
+        # Data store.
+        self._data.append(
+            {
+                "type": "button",
+                "label": label,
+                "callback": onClick,
+                "visible": options['visible']
+            }
+        )
+        if isinstance(label, Observable):
+            BarForms[self._formId]['obs'].append(label._id)
+        if isinstance(options['visible'], Observable):
+            BarForms[self._formId]['obs'].append(options['visible']._id)
+        updateForm(self)
+        return self
+
+    def close(self):
+        getSystem().NotifyToClient(
+            self._playerId, 
+            "closeCustomForm", 
+            {"formId": self._formId}
+        )
+        return self
+
+    def show(self):
+        updateForm(self, "send")
+        return self
+
 class FormLayout:
     
     def __init__(self, layout={}):
@@ -575,6 +691,7 @@ class FormLayout:
         self.__offset = layout.get("offset", [0, 0])
         self.__size = layout.get("size", [1, 1])
         self.__margin = layout.get("margin", [0, 0, 0, 0])
+        self.__layer = layout.get("layer", 0)
 
     @property
     def position(self):
@@ -643,6 +760,17 @@ class FormLayout:
                 raise Exception("Set margin failed! Margin must has at least 2 elements.")
         else:
             raise Exception("Set margin failed! Margin must be a tuple or a list.")
+        
+    @property
+    def layer(self):
+        return self.__layer
+    
+    @layer.setter
+    def layer(self, value):
+        if isinstance(value, (int, Observable)):
+            self.__layer = value
+        else:
+            raise Exception("Set layer failed! Layer must be an int.")
 
 class MoreUICustomData:
 
@@ -650,6 +778,7 @@ class MoreUICustomData:
         # type: (CustomForm, FormLayout) -> None
         self.__form = form
         self.__layout = layout
+        self.__mayCloseAll = Observable.create(False)
     
     @property
     def form(self):
@@ -658,6 +787,38 @@ class MoreUICustomData:
     @property
     def layout(self):
         return self.__layout
+
+    @property
+    def mayCloseAll(self):
+        return self.__mayCloseAll
+    
+    @mayCloseAll.setter
+    def mayCloseAll(self, value):
+        self.__mayCloseAll.setData(value)
+    
+class MoreUIBarData:
+
+    def __init__(self, form, layout):
+        # type: (CustomForm, FormLayout) -> None
+        self.__form = form
+        self.__layout = layout
+        self.__mayCloseAll = Observable.create(False)
+    
+    @property
+    def form(self):
+        return self.__form
+    
+    @property
+    def layout(self):
+        return self.__layout
+
+    @property
+    def mayCloseAll(self):
+        return self.__mayCloseAll
+    
+    @mayCloseAll.setter
+    def mayCloseAll(self, value):
+        self.__mayCloseAll.setData(value)
     
 class MoreUILayout:
     """
@@ -733,10 +894,32 @@ class MoreUI:
         d['size'] = data.layout.size
         d['offset'] = data.layout.offset
         d['margin'] = data.layout.margin
-        for temp in [d['pos'], d['size'], d['offset'], d['margin']]:
+        d['mayCloseAll'] = data.mayCloseAll
+        d['layer'] = data.layout.layer
+        for temp in [d['pos'], d['size'], d['offset'], d['margin'], [d['layer'], d['mayCloseAll']]]:
             for el in temp:
                 if hasattr(el, "getData"):
                     CustomForms[fm.formId]['obs'].append(el._id)
+        updateForm(fm, "combine")
+        return data
+    
+    def addBarForm(self, title, options={}, layout={}):
+        if not isinstance(layout, dict):
+            raise Exception("Add bar form failed! Arg 2 excepted dict, but got %s" % layout)
+        fm = BarForm.create(self.__playerId, title, options)
+        data = MoreUIBarData(fm, FormLayout(layout))
+        self.__forms.append(data)
+        d = fm._options
+        d['pos'] = data.layout.position
+        d['size'] = data.layout.size
+        d['offset'] = data.layout.offset
+        d['margin'] = data.layout.margin
+        d['mayCloseAll'] = data.mayCloseAll
+        d['layer'] = data.layout.layer
+        for temp in [d['pos'], d['size'], d['offset'], d['margin'], [d['layer'], d['mayCloseAll']]]:
+            for el in temp:
+                if hasattr(el, "getData"):
+                    BarForms[fm.formId]['obs'].append(el._id)
         updateForm(fm, "combine")
         return data
     
@@ -757,10 +940,15 @@ class MoreUI:
 
     def addForm(self, form, layout={}):
         # type: (DynamicForm, dict) -> MoreUICustomData
-        if not isinstance(form, CustomForm):
-            raise Exception("Add form failed! Arg 0 excepted type <CustomForm>, but got %s" % type(form).__name__)
+        if not isinstance(form, DynamicForm):
+            raise Exception("Add form failed! Arg 0 excepted type <DynamicForm>, but got %s" % type(form).__name__)
         if not isinstance(layout, dict):
             raise Exception("Add form failed! Arg 1 excepted type dict, but got %s" % type(layout).__name__)
+        Obs = []
+        if isinstance(form, CustomForm):
+            Obs = CustomForms
+        elif isinstance(form, BarForm):
+            Obs = BarForms
         data = MoreUICustomData(form, FormLayout(layout))
         self.__forms.append(data)
         d = form._options
@@ -768,12 +956,18 @@ class MoreUI:
         d['size'] = data.layout.size
         d['offset'] = data.layout.offset
         d['margin'] = data.layout.margin
-        for temp in [d['pos'], d['size'], d['offset'], d['margin']]:
+        d['mayCloseAll'] = data.mayCloseAll
+        d['layer'] = data.layout.layer
+        for temp in [d['pos'], d['size'], d['offset'], d['margin'], [d['layer'], d['mayCloseAll']]]:
             for el in temp:
                 if hasattr(el, "getData"):
-                    CustomForms[form.formId]['obs'].append(el._id)
+                    Obs[form.formId]['obs'].append(el._id)
         updateForm(form, "combine")
         return data
+    
+    def removeForm(self, form):
+        self.__forms.remove(form)
+        return self
 
     def show(self):
         # type: () -> None
@@ -783,3 +977,11 @@ class MoreUI:
         updateForm(self.__playerId, "sendMore", layout)
         for formData in self.__forms:
             updateForm(formData.form, "combine")
+
+    def close(self):
+        getSystem().NotifyToClient(
+            self.__playerId, 
+            "closeMoreUI", 
+            {"formId": self.__id}
+        )
+        return self

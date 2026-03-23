@@ -30,6 +30,41 @@ class ExampleServer(ServerSystem):
             self.ObservableExample(playerId)
         elif data['message'] == 'Layout':
             self.LayoutExample(playerId)
+        elif data['message'] == 'ConfigMenu':
+            self.ConfigMenuExample(playerId)
+
+    def ConfigMenuExample(self, playerId):
+        menu = ConfigMenu.create(playerId, "测试配置")
+
+        intro = CustomForm.create(playerId, "模组介绍")
+        intro.label("你好你好\n\nxxxx\n\n再见再见")
+
+        globalConfig = CustomForm.create(playerId, "全局设置")
+        selection = Observable.create(1, {"clientWritable": True})
+        configs = [
+            {"label": "配置1", "value": 1},
+            {"label": "配置2", "value": 2},
+            {"label": "配置3", "value": 3}
+        ]
+        globalConfig.label("这个界面只是演示测试界面功能，没有实际意义！")
+        globalConfig.divider()
+        globalConfig.dropdown("选择一个配置", selection, configs)
+
+        monster = CustomForm.create(playerId, "222")
+        spawnRate = Observable.create(1, {"clientWritable": True})
+        damageRate = Observable.create(1, {"clientWritable": True})
+
+        monster.label("这个界面只是演示测试界面功能，没有实际意义！")
+        monster.divider()
+        monster.slider("刷怪速率", spawnRate, 0, 10)
+        monster.slider("伤害倍率", damageRate, 0, 10)
+        monster.toggle("启用变态模式", Observable.create(False, {"clientWritable": True}))
+        monster.toggle("启用无敌模式", Observable.create(False, {"clientWritable": True}))
+
+        menu.addPage(intro)
+        menu.addPage(globalConfig)
+        menu.addPage(monster, "怪物")
+        menu.show()
 
     def MoreUIExample(self, playerId):
         ui = MoreUI.create(playerId)

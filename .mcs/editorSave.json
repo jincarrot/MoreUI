@@ -1,0 +1,45 @@
+{
+    "Addon": {
+        "EnchantSetting": {
+            "amplifier": 1
+        },
+        "PackResourceSortData": {
+
+        },
+        "PlayerEffectSetting": {
+            "amplifier": 1,
+            "duration": 10
+        },
+        "PresetInstanceTreeData": [
+
+        ]
+    },
+    "UI": {
+        "customPrefabGroupExpand": [
+            "oreui_controls"
+        ],
+        "expandData": {
+            "prefab": {
+                "oreui_controls.no_scroll_body": [
+                    "/netease_prefab_screen"
+                ],
+                "oreui_controls.tab_btn": [
+                    "/netease_prefab_screen",
+                    "/netease_prefab_screen/tab_btn",
+                    "/netease_prefab_screen/tab_btn/toggle/this_toggle"
+                ],
+                "oreui_controls.tab_btn_checked": [
+                    "/netease_prefab_screen",
+                    "/netease_prefab_screen/tab_btn_checked"
+                ],
+                "oreui_controls.tab_btn_unchecked": [
+                    "/netease_prefab_screen",
+                    "/netease_prefab_screen/tab_btn_unchecked"
+                ]
+            },
+            "screen": {
+
+            }
+        }
+    }
+}

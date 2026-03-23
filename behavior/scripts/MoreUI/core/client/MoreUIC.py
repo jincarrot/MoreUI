@@ -18,12 +18,14 @@ class MoreUIClient(ClientSystem):
         self.ListenForEvent(NamespaceServer, SystemNameServer, "closeCustomForm", self, self.closeCustomForm)
         self.ListenForEvent(NamespaceServer, SystemNameServer, "combineCustomForm", self, self.combineCustomForm)
         self.ListenForEvent(NamespaceServer, SystemNameServer, "sendMoreCustomForm", self, self.sendMoreCustomForm)
+        self.ListenForEvent(NamespaceServer, SystemNameServer, "closeMoreUI", self, self.closeMoreUI)
         self.ListenForEvent(clientApi.GetEngineNamespace(), clientApi.GetEngineSystemName(), "UiInitFinished", self, self.initUI)
 
     def initUI(self, data):
         path = MoreUIClient.__module__.replace("MoreUIC", "Forms")
         clientApi.RegisterUI("server_ui", "CustomForm", "%s.CustomFormUI" % path, "server_forms.custom_form")
         clientApi.RegisterUI("server_ui", "MoreUI", "%s.More" % path, "server_forms.moreui")
+        clientApi.RegisterUI("server_ui", "BarForm", "%s.BarFormUI" % path, "server_forms.bar_form")
 
     def sendCustomForm(self, data):
         screen = clientApi.GetTopScreen()
@@ -33,7 +35,10 @@ class MoreUIClient(ClientSystem):
                     screen.GetBaseUIControl(form.basePath).SetVisible(True)
         if hasattr(screen, "update"):
             return
-        clientApi.PushScreen("server_ui", "CustomForm", data)
+        if "direction" in data['options']:
+            clientApi.PushScreen("server_ui", "BarForm", data)
+        else:
+            clientApi.PushScreen("server_ui", "CustomForm", data)
 
     def updateCustomForm(self, data):
         screen = clientApi.GetTopScreen()
@@ -49,15 +54,27 @@ class MoreUIClient(ClientSystem):
                 if form.formId == data['formId']:
                     form.close({})
 
-    def combineCustomForm(self, data):
+    def closeMoreUI(self, data):
         screen = clientApi.GetTopScreen()
         if hasattr(screen, "isMoreUI"):
-            fm = CustomFormUI("", "", data)
-            def repeat():
-                if screen.GetBaseUIControl("/screen"):
-                    screen.combine(fm)
-                    clientApi.GetEngineCompFactory().CreateGame(clientApi.GetLevelId()).CancelTimer(timerId)
-            timerId = clientApi.GetEngineCompFactory().CreateGame(clientApi.GetLevelId()).AddTimer(0.01, repeat)
+            clientApi.PopScreen()
+
+    def combineCustomForm(self, data):
+        screen = clientApi.GetTopScreen()
+        def main():
+            if hasattr(screen, "isMoreUI"):
+                clientApi.GetEngineCompFactory().CreateGame(clientApi.GetLevelId()).CancelTimer(mainId)
+                fm = None
+                if 'direction' in data['options']:
+                    fm = BarFormUI("", "", data)
+                else:
+                    fm = CustomFormUI("", "", data)
+                def repeat():
+                    if screen.GetBaseUIControl("/screen"):
+                        screen.combine(fm)
+                        clientApi.GetEngineCompFactory().CreateGame(clientApi.GetLevelId()).CancelTimer(timerId)
+                timerId = clientApi.GetEngineCompFactory().CreateGame(clientApi.GetLevelId()).AddTimer(0.01, repeat)
+        mainId = clientApi.GetEngineCompFactory().CreateGame(clientApi.GetLevelId()).AddTimer(0.01, main)
 
     def sendMoreCustomForm(self, data):
         screen = clientApi.GetTopScreen()

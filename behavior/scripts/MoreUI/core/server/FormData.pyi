@@ -75,6 +75,9 @@ class CustomOptions(TypedDict):
     style: str = "oreui"
     closable: bool | Observable[bool]
 
+class BarOptions(CustomOptions):
+    direction: str
+
 class CustomForm(DynamicForm):
     """
     一种可以添加按钮、文本、开关、下拉框、滑动条等控件的自定义表单。
@@ -217,6 +220,45 @@ class CustomForm(DynamicForm):
         返回自定义表单对象
         """
     
+class BarForm(DynamicForm):
+
+    @staticmethod
+    def create(playerId: str, title: str | Observable[str], options: BarOptions={}) -> BarForm: 
+        """
+        创建一个自定义表单。
+
+        --playerId - 需要接收到此表单的玩家playerId
+
+        --title - 表单标题
+
+        --options? - 表单选项
+
+        返回自定义表单对象
+        """
+
+    def close(self) -> BarForm: 
+        """
+        关闭此表单。
+        """
+        
+    def button(self, label: str | Observable[str], onClick: Callable[[], None], options: ButtonOptions = ...) -> BarForm: 
+        """
+        添加一个按钮。
+        
+        --label - 按钮文本。
+
+        --onClick - 按钮按下时触发的回调函数。
+
+        --options? - 按钮选项。
+
+        返回自身
+        """
+
+    def show(self) -> BarForm: 
+        """
+        向玩家展示此表单。
+        """
+
 class FormLayout:
     """
     表单样式设置。
@@ -264,11 +306,23 @@ class FormLayout:
     @margin.setter
     def margin(self, value: list[float | Observable[float]]): ...
 
+    @property
+    def layer(self) -> int | Observable[int]: 
+        """
+        表单层级，整数，默认为-1。
+
+        层级较高的表单会覆盖层级较低的表单。
+        """
+
+    @layer.setter
+    def layer(self, value: int | Observable[int]): ...
+
 class FormLayoutDict(TypedDict):
     position: list[int]=(0, 0)
     size: list[int]=(1, 1)
     offset: list[float]=(0, 0)
     margin: list[float]=(0, 0)
+    layer: int=-1
 
 class MoreUICustomData:
 
@@ -277,6 +331,20 @@ class MoreUICustomData:
     
     @property
     def layout(self) -> FormLayout: ...
+
+    @property
+    def mayCloseAll(self) -> bool: ...
+
+class MoreUIBarData:
+
+    @property
+    def form(self) -> BarForm: ...
+    
+    @property
+    def layout(self) -> FormLayout: ...
+
+    @property
+    def mayCloseAll(self) -> bool: ...
     
 class MoreUILayout:
     """
@@ -345,6 +413,19 @@ class MoreUI:
 
         返回表单数据
         """
+
+    def addBarForm(self, title: str | Observable[str], options: CustomOptions=..., layout: FormLayoutDict=...) -> MoreUIBarData: 
+        """
+        向UI添加一个侧边栏表单(BarForm)。
+
+        --title - 表单标题。
+
+        --options? - 表单创建选项。
+
+        --layout? - 表单布局。
+
+        返回表单数据
+        """
     
     @property
     def layout(self) -> MoreUILayout:
@@ -355,7 +436,7 @@ class MoreUI:
     @layout.setter
     def layout(self, style: MoreUILayoutDict): ...
 
-    def addForm(self, form: CustomForm, layout: FormLayoutDict=...) -> MoreUICustomData:
+    def addForm(self, form: DynamicForm, layout: FormLayoutDict=...) -> MoreUICustomData:
         """
         向UI添加一个已经创建好的表单。
 
@@ -366,7 +447,30 @@ class MoreUI:
         返回表单数据
         """
 
+    def removeForm(self, form: MoreUICustomData):
+        """
+        移除一个表单
+        
+        --form - 表单对象
+        
+        返回自身
+        """
+
     def show(self):
         """
         向玩家发送表单。
         """
+
+    def close(self):
+        """
+        关闭表单
+        """
+
+class UIRawMessage(TypedDict):
+    """文本组件"""
+    
+    Rawtext: list[UIRawMessage]
+    Text: str | Observable[str]
+    Translate: str | Observable[str]
+    With: list[str] | UIRawMessage
+    Sprite: str | UIRawMessage

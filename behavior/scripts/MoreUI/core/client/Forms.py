@@ -46,12 +46,16 @@ class CustomFormUI(ScreenNode):
         self.pos = None
         self.size = None
 
+    @property
+    def formType(self):
+        return "custom"
+    
     @ViewBinder.binding(ViewBinder.BF_ButtonClickUp, '#custom_form_close')
     def Close(self, args):
         clientApi.PopScreen()
 
     def close(self, data):
-        if self.basePath:
+        if self.basePath and not self.options.get("mayCloseAll", False):
             self.sn.GetBaseUIControl(self.basePath).SetVisible(False)
         else:
             clientApi.PopScreen()
@@ -383,7 +387,7 @@ class CustomFormUI(ScreenNode):
         )
 
     def move(self, data):
-        if not self.move_btn:
+        if not self.move_btn or not self.move_btn.GetVisible():
             return
         size = self.panel.GetSize()
         pos = self.move_btn.GetPosition()
@@ -391,14 +395,14 @@ class CustomFormUI(ScreenNode):
         posY = pos[1]
         if (posX - size[0] / 2 + 8, posY) == self.pos:
             return
-        scrollValue = self.panel.asScrollView().GetScrollViewPercentValue()
+        # scrollValue = self.panel.asScrollView().GetScrollViewPercentValue()
         self.panel.SetPosition((posX - size[0] / 2 + 8, posY))
         self.resize_btn.SetPosition((posX + size[0] / 2 - 8, posY + size[1] - 25))
-        self.panel.asScrollView().SetScrollViewPercentValue(scrollValue)
+        # self.panel.asScrollView().SetScrollViewPercentValue(scrollValue)
         self.pos = (posX - size[0] / 2 + 8, posY)
 
     def resize(self, data):
-        if not self.resize_btn:
+        if not self.resize_btn or not self.resize_btn.GetVisible():
             return
         pos = self.resize_btn.GetPosition()
         posX = pos[0]
@@ -414,13 +418,154 @@ class CustomFormUI(ScreenNode):
             self.resize_btn.SetPosition((ori[0] + size[0] - 16, ori[1] + size[1] - 25))
         if self.size == size:
             return
-        scrollValue = self.panel.asScrollView().GetScrollViewPercentValue()
+        # scrollValue = self.panel.asScrollView().GetScrollViewPercentValue()
         move_ori_pos = self.move_btn.GetPosition()
         self.panel.SetSize((size[0], size[1]), True)
         self.panel.SetPosition(ori)
         self.move_btn.SetPosition((move_ori_pos[0] + size[0] / 2 - ori_size[0] / 2, move_ori_pos[1]))
-        self.panel.asScrollView().SetScrollViewPercentValue(scrollValue)
+        # self.panel.asScrollView().SetScrollViewPercentValue(scrollValue)
         self.size = [size[0], size[1]]
+
+class BarFormUI(CustomFormUI):
+
+    def __init__(self, namespace, name, params):
+        ScreenNode.__init__(self, namespace, name, params)
+        self.options = params['options']
+        self.direction = self.options.get("direction", "vertical")
+        self.grid_pos = self.options.get("pos", None)
+        self.grid_size = self.options.get("size", None)
+        self.grid_offset = self.options.get("offset", None)
+        self.grid_margin = self.options.get("margin", None)
+        self.sn = self
+        self.basePath = ""
+        self.titleLabel = params['title']
+        self.formId = params['formId']
+        self.data = params['data']
+        self.TOUCH_PATH = "/panel/scroll_touch/scroll_view/panel/background_and_viewport/background"
+        self.MOUSE_PATH = "/panel/scroll_mouse/scroll_view/stack_panel/background_and_viewport/background"
+        self.content = None
+        self.title = None
+        self.close_btn = None
+        self.panel = None
+        self.move_btn = None
+        self.resize_btn = None
+        self.movable = self.options['movable']
+        self.resizable = self.options['resizable']
+        self.style = self.options['style']
+        self.tabs = []
+        self.height = 0
+        self.pos = None
+        self.size = None
+
+    @property
+    def formType(self):
+        return "bar"
+    
+    @ViewBinder.binding(ViewBinder.BF_ButtonClickUp, '#custom_form_close')
+    def Close(self, args):
+        clientApi.PopScreen()
+
+    def Update(self):
+        index = 0
+        for (tab, value) in self.tabs:
+            if not tab:
+                return
+            cur = tab.GetChildByPath("/toggle").asSwitchToggle().GetToggleState()
+            if cur != value:
+                getSystem().NotifyToServer(
+                    "updateBarForm%s" % self.formId, 
+                    {
+                        "selection": int(tab.GetPath()[-1]),
+                        "operation": "tabButtonClick"
+                    }
+                )
+                i = 0
+                for (c, value) in self.tabs:
+                    if index != i:
+                        c.GetChildByPath("/toggle").asSwitchToggle().SetToggleState(False)
+                    self.tabs[i] = (c, False)
+                    i += 1
+                self.tabs[index] = (tab, cur)
+            index += 1
+        
+    def Create(self):
+        self.panel = self.sn.GetBaseUIControl(self.basePath + "/panel")
+        self.content = self.sn.GetBaseUIControl(self.basePath + "/panel")
+        self.title = self.panel.GetChildByPath("/title")
+        self.close_btn = self.panel.GetChildByPath("/close")
+        if not self.title:
+            raise Exception("Create form error!")
+        self.close_btn = self.close_btn.asButton()
+        self.close_btn.AddTouchEventParams({"isSwallow": True})
+        self.close_btn.SetButtonTouchUpCallback(self.close)
+        self.title = self.title.asLabel()
+        self.title.SetText(self.titleLabel)
+        self.move_btn = self.sn.GetBaseUIControl(self.basePath + "/move").asButton()
+        self.move_btn.AddTouchEventParams({"isSwallow": True})
+        # self.move_btn.SetButtonTouchMoveCallback(self.move)
+        self.resize_btn = self.sn.GetBaseUIControl(self.basePath + "/resize").asButton()
+        self.resize_btn.AddTouchEventParams({"isSwallow": True})
+        # self.resize_btn.SetButtonTouchMoveCallback(self.resize)
+        self.update({"data": self.data, "title": self.titleLabel, "formId": self.formId, "options": self.options})
+
+    def update(self, data):
+        if data['formId'] != self.formId:
+            return
+        self.grid_pos = data['options'].get("pos", None)
+        self.grid_size = data['options'].get("size", None)
+        self.grid_offset = data['options'].get("offset", None)
+        self.grid_margin = data['options'].get("margin", None)
+        self.data = data['data']
+        self.titleLabel = data['title']
+        self.tabs = []
+        index = 0
+        height = 20
+        self.title.SetText(data['title'])
+        self.move_btn.SetVisible(data['options']['movable'])
+        self.resize_btn.SetVisible(data['options']['resizable'])
+        self.close_btn.SetVisible(data['options']['closable'])
+        for controlData in data['data']:
+            control = self.content.GetChildByPath("/c%s" % index)
+            if not controlData['visible']:
+                if control:
+                    control.SetVisible(False)
+                index += 1
+                continue
+            if control:
+                # Control created and is the same type, only cauculate this height.
+                if self.direction == 'vertical':
+                    control.SetFullPosition("y", {"absoluteValue": height + 5})
+                    height += 35
+                else:
+                    control.SetSize((40, 20))
+                    control.SetFullPosition("x", {"absoluteValue": height + 40})
+                    height += 45
+            else:
+                # Control not created, create now.
+                control = self.sn.CreateChildControl("oreui_controls.tab_btn", "c%s" % index, self.content)
+                if self.direction == 'vertical':
+                    control.SetFullPosition("y", {"absoluteValue": height + 5})
+                    height += 35
+                else:
+                    control.SetSize((40, 20))
+                    control.SetFullPosition("x", {"absoluteValue": height + 40})
+                    height += 45
+            # Update labels.
+            states = [
+                "unchecked",
+                "checked",
+                "unchecked_hover",
+                "checked_hover"
+            ]
+            for state in states:
+                control.GetChildByPath("/toggle/this_toggle/" + state + "/button_label").asLabel().SetText(controlData['label'])
+            control.SetVisible(True)
+            index += 1
+            self.tabs.append((control, control.GetChildByPath("/toggle").asSwitchToggle().GetToggleState()))
+        # Clear visible controls.
+        while self.content.GetChildByPath("/c%s" % index):
+            self.content.GetChildByPath("/c%s" % index).SetVisible(False)
+            index += 1
 
 class More(ScreenNode):
     
@@ -482,12 +627,17 @@ class More(ScreenNode):
 
     def combine(self, fm):
         # type: (CustomFormUI) -> None
+        baseControl = ""
+        if fm.formType == 'custom':
+            baseControl = "server_forms.custom_form_panel"
+        elif fm.formType == 'bar':
+            baseControl = "server_forms.bar_form_panel"
         self.forms.append(fm)
         fm.sn = self
         index = random.randint(0, 32767)
         fm.basePath = "/screen/panel%s" % index
-        form = self.CreateChildControl("server_forms.custom_form_panel", "panel%s" % index, self.GetBaseUIControl("/screen"))
-        form.SetLayer(self.currentLayer)
+        form = self.CreateChildControl(baseControl, "panel%s" % index, self.GetBaseUIControl("/screen"))
+        form.SetLayer(fm.options['layer'] * 50)
         self.currentLayer += 50
         self.updateGrid(fm)
         fm.Create()
